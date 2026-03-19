@@ -23,6 +23,7 @@ Connect your local documents, code, images, and videos directly to **Claude**, *
 | 📸 **Ultimate Multimodality** | Natively scans, embeds, and retrieves **Images** (`.jpg`, `.webp`), **Video** (`.mp4`), and **Audio** (`.mp3`, `.wav`) without extracting text! |
 | 📄 **Visual PDF RAG** | Parses PDFs page-by-page as high-quality images. It visually embeds charts, plots, and layout while preserving extracted text for LLM citation. |
 | 🤖 **Agentic Guardrails** | Built for autonomous AI agents. Includes an automatic Junk Filter (`node_modules`, `.git`), wildcard blacklisting (`fnmatch`), API exponential backoff, and ghost file pruning. |
+| ⚡ **Smart Deduplication** | Pre-calculates MD5 hashes of local files before querying Gemini. Identical, unmodified files bypass the API entirely to save your token quotas! |
 
 ---
 

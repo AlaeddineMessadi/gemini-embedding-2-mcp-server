@@ -21,3 +21,6 @@ When indexing huge folders, there is a realistic chance of hitting Google API Qu
 
 ## 5. Root Directory Suicide Blocks
 The server restricts hard-limits of `2,000` files per directory tool-call to prevent memory exhaustion, and explicitly throws an error if the agent attempts to index root operating system folders (e.g., `/`, `/Users`, `C:\`).
+
+## 6. Smart Deduplication (Token Saver)
+When an agent or user attempts to re-index an existing directory, the server does not blindly re-read every file and hit the Gemini API. Instead, it computes an MD5 hash of the local file and compares it to the tracked metadata in the ChromaDB vector database. Unmodified files completely bypass the embedding pipeline, saving massive amounts of API tokens and quotas during subsequent folder syncs. Overwritten files are dynamically purged from the database and re-embedded seamlessly.
