@@ -51,7 +51,7 @@ Run the following command in your terminal:
 ```bash
 claude mcp add gemini-embedding-2-mcp \
   --env GEMINI_API_KEY="your-api-key-here" \
-  uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git gemini-embedding-2-mcp
+  -- uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git gemini-embedding-2-mcp
 ```
 
 ### 🦋 Claude Desktop
@@ -158,7 +158,7 @@ uv sync
 
 *(If you use this method, you can add it directly to Claude Code CLI locally by running:)*
 ```bash
-claude mcp add gemini-embedding-local --env GEMINI_API_KEY="your-api-key" uv --directory "$(pwd)" run gemini-embedding-2-mcp
+claude mcp add gemini-embedding-local --env GEMINI_API_KEY="your-api-key" -- uv --directory "$(pwd)" run gemini-embedding-2-mcp
 ```
 
 ---
