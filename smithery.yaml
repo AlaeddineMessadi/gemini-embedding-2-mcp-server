@@ -1,0 +1,16 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - GEMINI_API_KEY
+    properties:
+      GEMINI_API_KEY:
+        type: string
+        description: "Google Gemini API Key (requires a Project with a linked Billing Account)"
+  commandFunction: |-
+    config => ({
+      command: 'uvx',
+      args: ['--from', 'git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git', 'gemini-embedding-2-mcp'],
+      env: { GEMINI_API_KEY: config.GEMINI_API_KEY }
+    })
