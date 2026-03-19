@@ -16,8 +16,8 @@ This project uses [`uv`](https://github.com/astral-sh/uv) for lightning-fast Pyt
 
 ```bash
 # Clone the repository
-git clone https://github.com/AlaeddineMessadi/gemini-mcp-embedding-server.git
-cd gemini-mcp-embedding-server
+git clone https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git
+cd gemini-embedding-2-mcp-server
 
 # Install dependencies
 uv sync
@@ -33,7 +33,7 @@ uv sync
 {
   "mcpServers": {
     "gemini-embedding-2-mcp": {
-      "command": "/path/to/gemini-mcp-embedding-server/.venv/bin/gemini-embedding-2-mcp",
+      "command": "/path/to/gemini-embedding-2-mcp-server/.venv/bin/gemini-embedding-2-mcp",
       "args": [],
       "env": {
         "GEMINI_API_KEY": "your-api-key-here"

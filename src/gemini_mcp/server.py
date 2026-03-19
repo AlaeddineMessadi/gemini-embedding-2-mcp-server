@@ -33,11 +33,15 @@ def get_embedder() -> GeminiEmbeddingClient:
 from google.genai import types
 
 @mcp.tool()
-async def index_directory(directory_path: str) -> str:
+async def index_directory(directory_path: str, ignore: list[str] = None) -> str:
     """
     Scans a local directory, extracts text from files (PDF, DOCX, TXT, MD) AND 
     raw video/audio/image bytes, generates semantic embeddings using 
     Gemini 2 and stores them for searching.
+    
+    Args:
+        directory_path: Absolute path to the directory.
+        ignore: Optional list of glob patterns to ignore (e.g., ["*.log", "drafts", "temp*"]).
     """
     try:
         db = get_db()
@@ -52,7 +56,7 @@ async def index_directory(directory_path: str) -> str:
         BATCH_SIZE = 50
         total_indexed = 0
         
-        for item in scan_directory(directory_path):
+        for item in scan_directory(directory_path, ignore=ignore):
             chunks.append(item)
             
             if item.get("is_media", False):

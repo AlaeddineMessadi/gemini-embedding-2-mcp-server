@@ -7,6 +7,8 @@ try:
     import fitz  # PyMuPDF
 except ImportError:
     fitz = None
+    
+import fnmatch
 
 try:
     import docx
@@ -51,12 +53,14 @@ def extract_text_from_file(file_path: pathlib.Path) -> str:
         logger.error(f"Error reading file {file_path}: {e}")
         return ""
 
-def scan_directory(directory_path: str, chunk_size: int = 1000, overlap: int = 200) -> Generator[Dict[str, Any], None, None]:
+def scan_directory(directory_path: str, chunk_size: int = 1000, overlap: int = 200, ignore: list = None) -> Generator[Dict[str, Any], None, None]:
     """
     Recursively scans a directory, extracts text from supported files or raw bytes from images, 
     and yields content ready for multimodal embedding.
     Yields dicts with: {'raw_data': Any, 'is_image': bool, 'metadata': {'source': str, 'chunk_index': int, 'type': str}}
     """
+    ignore = ignore or []
+    
     base_dir = pathlib.Path(directory_path)
     if not base_dir.exists() or not base_dir.is_dir():
         logger.error(f"Directory not found: {directory_path}")
@@ -91,11 +95,20 @@ def scan_directory(directory_path: str, chunk_size: int = 1000, overlap: int = 2
         
     for root, dirs, files in os.walk(base_dir):
         # Modify dirs in-place to prevent os.walk from entering ignored directories
-        dirs[:] = [d for d in dirs if not d.startswith('.') and d not in IGNORE_DIRS]
+        dirs[:] = [
+            d for d in dirs 
+            if not d.startswith('.') 
+            and d not in IGNORE_DIRS
+            and not any(fnmatch.fnmatch(d, p) for p in ignore)
+        ]
             
         for file in files:
             # Skip hidden files
             if file.startswith('.'):
+                continue
+                
+            # Skip files matching custom ignore patterns
+            if any(fnmatch.fnmatch(file, p) for p in ignore):
                 continue
                 
             if files_scanned >= MAX_FILES_PER_SCAN:

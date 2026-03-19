@@ -1,5 +1,5 @@
 [project]
-name = "gemini-mcp-embedding-server"
+name = "gemini-embedding-2-mcp-server"
 version = "0.1.0"
 description = "MCP server connecting local files to Claude via Gemini Embedding 2"
 authors = [
