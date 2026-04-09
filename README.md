@@ -2,28 +2,46 @@
   <img src="assets/banner.svg" alt="Gemini Embedding 2 MCP Server Banner" />
 
   <p align="center">
-    <strong>A powerful Model Context Protocol (MCP) server that transforms any local directory into an ultrafast, visually-aware spatial search engine for AI agents.</strong>
+    <strong>A multimodal local memory MCP for AI agents powered by Gemini Embedding 2.</strong>
   </p>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
   [![MCP](https://img.shields.io/badge/MCP-Compatible-8A2BE2.svg)](https://modelcontextprotocol.io/)
+  [![CI](https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server/actions/workflows/ci.yml)
 </div>
 
 ---
 
-Connect your local documents, code, images, and videos directly to **Claude**, **Cursor**, or **VS Code** using Google's state-of-the-art `gemini-embedding-2-preview` model and a strictly local **ChromaDB** vector database.
+Connect your local documents, code, PDFs, images, audio, and video directly to **Claude**, **Cursor**, or **VS Code** using Google's `gemini-embedding-2-preview` model and a strictly local **ChromaDB** vector database.
+
+Unlike text-only local RAG tools, this server keeps one local memory layer across text, visual PDF pages, images, audio, and video, then returns exact file paths and page or chunk context back to your agent.
+
+## Why This Is Different
+
+- **One embedding space across modalities**: Search code, PDFs, images, audio, and video from the same memory layer.
+- **Local-first persistence**: Your index stays in `~/.gemini_mcp_db`, not in a hosted vector database.
+- **Agent-friendly retrieval**: Search results include exact paths, types, modalities, and page-aware context.
+- **Zero-config by default**: The server uses built-in guardrails and sensible indexing defaults so most users do not need a config file.
+
+## What You Can Ask
+
+- `Find the PDF page that explains our design tokens.`
+- `Search my image library for screenshots of dashboards with dark sidebars.`
+- `Find the audio or video clip where we talked about pricing changes.`
+- `Search only my work docs folder for onboarding notes about incident response.`
+- `Give me the surrounding context for result 2 so I can cite the original file correctly.`
 
 ## ✨ Key Features
 
 | Feature | Description |
 | :--- | :--- |
-| 🛡️ **Local Privacy** | Uses ChromaDB entirely locally (`~/.gemini_mcp_db`). Your files never go to a 3rd party database. Only raw byte chunks are sent to the Gemini Embedding API. |
-| 🧠 **Enterprise-Grade** | Leverages `gemini-embedding-2-preview` with specialized `RETRIEVAL_DOCUMENT` Task Types and MRL `768` dimensionality optimization. |
-| 📸 **Ultimate Multimodality** | Natively scans, embeds, and retrieves **Images** (`.jpg`, `.webp`), **Video** (`.mp4`), and **Audio** (`.mp3`, `.wav`) without extracting text! |
-| 📄 **Visual PDF RAG** | Parses PDFs page-by-page as high-quality images. It visually embeds charts, plots, and layout while preserving extracted text for LLM citation. |
-| 🤖 **Agentic Guardrails** | Built for autonomous AI agents. Includes an automatic Junk Filter (`node_modules`, `.git`), wildcard blacklisting (`fnmatch`), API exponential backoff, and ghost file pruning. |
-| ⚡ **Smart Deduplication** | Pre-calculates MD5 hashes of local files before querying Gemini. Identical, unmodified files bypass the API entirely to save your token quotas! |
+| 🧠 **Unified Multimodal Search** | Stores text, visual PDF pages, images, audio, and video in one local semantic memory so a single query can retrieve across modalities. |
+| 📄 **Visual PDF Retrieval** | Renders PDFs page-by-page as images for Gemini Embedding 2 while retaining extracted text for agent-readable citations and context. |
+| 🎯 **Precision Retrieval Controls** | Supports compact filters for scope, path prefix, type, extension, and modality so agents can search precisely without heavy configuration. |
+| 👀 **Preview Before Indexing** | `preview_directory()` shows what will be indexed, grouped by modality and skip reason, before the scan runs. |
+| 🧾 **Context-Aware Results** | `get_result_context()` returns neighboring chunks or pages so agents can inspect exact source material after search. |
+| 🛡️ **Local Privacy + Guardrails** | Uses a local ChromaDB store, skips junk folders by default, blocks dangerous root scans, and handles deduplication and ghost-file cleanup automatically. |
 
 ---
 
@@ -34,6 +52,14 @@ Make sure you have `uv` installed on your machine (`pip install uv`).
 
 ### Method 1: Zero-Install (Recommended)
 You can point your AI assistant to run the server directly from GitHub without ever cloning the repository locally. `uvx` acts like `npx` for Python, downloading and caching the server in a secure ephemeral environment automatically!
+
+For a **stable install**, pin to a release tag:
+
+```bash
+uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.0 gemini-embedding-2-mcp
+```
+
+For an **edge install**, omit the tag and track the latest `main` branch state.
 
 ## 🔑 Getting your Gemini API Key
 To power the embedding model, you need a free API key from Google.
@@ -186,10 +212,22 @@ Once connected, your AI assistant instantly gains the following tools:
 
 ### ⚙️ Tools
 - `index_directory(path: str, ignore: list = None)`: Scan and formally embed a completely new local folder into the DB. Safely supports wildcard `ignore` patterns.
-- `search_my_documents(query: str, limit: int)`: Run lighting-fast semantic cosine-similarity spatial search over the indexed database.
-- `list_indexed_directories()`: See what paths the AI already knows about.
+- `preview_directory(path: str, ignore: list = None)`: Dry-run a scan and see what would be indexed, grouped by modality and skip reason.
+- `search_my_documents(query: str, limit: int, scope: str = None, types: list[str] = None, path_prefix: str = None, extensions: list[str] = None, modalities: list[str] = None)`: Run semantic search with compact retrieval filters.
+- `get_result_context(source: str, locator: str = None, window: int = 1)`: Fetch nearby chunk or page context for a previously indexed result.
+- `list_indexed_directories()`: See which directory roots the AI already knows about.
 - `sync_indexed_directories()`: Automatically forces the DB to find new, updated, or recently deleted (ghost) files and cleans up vectors.
 - `remove_directory_from_index(path: str)`: Clears a specific trajectory of vectors.
+
+### 🔎 Precision Filters
+
+The main search tool stays simple by default, but supports a few high-value filters when you need exactness:
+
+- `scope`: Limit matches to a broad directory scope such as `/Users/me/work`
+- `path_prefix`: Limit matches to a more exact path prefix
+- `types`: Restrict by stored item type such as `text` or `pdf_visual_page`
+- `extensions`: Restrict by file extension such as `.pdf` or `.md`
+- `modalities`: Restrict by modality such as `text`, `pdf`, `image`, `audio`, or `video`
 
 ### 📊 Resources
 - `gemini://database-stats`: Real-time observability! Exposes the exact scale of the vector segments inside ChromaDB directly to the assistant's context.
@@ -200,6 +238,9 @@ Once connected, your AI assistant instantly gains the following tools:
 - [Architecture Deep Dive](docs/architecture.md)
 - [Ultimate Multimodality & PDF RAG](docs/multimodality.md)
 - [Agentic Safety Guardrails](docs/agent-guardrails.md)
+- [Use Cases](docs/use-cases.md)
+- [Result Model](docs/result-model.md)
+- [Releasing](docs/releasing.md)
 
 ## 📜 License
 MIT © Alaeddine Messadi

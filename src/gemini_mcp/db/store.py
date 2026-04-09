@@ -89,7 +89,10 @@ class ChromaStore:
         return len(ids_to_delete)
 
     def query(
-        self, query_embedding: List[float], n_results: int = 5
+        self,
+        query_embedding: List[float],
+        n_results: int = 5,
+        filters: Dict[str, Any] | None = None,
     ) -> List[Dict[str, Any]]:
         """
         Queries ChromaDB using the query vector and returns the top matches.
@@ -97,8 +100,14 @@ class ChromaStore:
         if not query_embedding:
             return []
 
+        total = self.collection.count()
+        if total == 0:
+            return []
+
+        candidate_count = min(max(n_results * 10, 25), total)
+
         results = self.collection.query(
-            query_embeddings=[query_embedding], n_results=n_results
+            query_embeddings=[query_embedding], n_results=candidate_count
         )
 
         matches = []
@@ -113,9 +122,10 @@ class ChromaStore:
             )
 
             for doc, meta, dist in zip(docs, metas, distances):
-                matches.append({"text": doc, "metadata": meta, "distance": dist})
+                if self._matches_filters(meta or {}, filters):
+                    matches.append({"text": doc, "metadata": meta, "distance": dist})
 
-        return matches
+        return matches[:n_results]
 
     def list_indexed_sources(self) -> List[str]:
         """Returns a list of unique 'source' files indexed in the database."""
@@ -130,6 +140,35 @@ class ChromaStore:
                 sources.add(meta["source"])
 
         return sorted(list(sources))
+
+    def list_indexed_directories(self) -> List[str]:
+        """Returns unique indexed parent directories."""
+        directories = {
+            os.path.dirname(source) for source in self.list_indexed_sources()
+        }
+        return sorted(directory for directory in directories if directory)
+
+    def get_source_entries(self, source: str) -> List[Dict[str, Any]]:
+        """Returns all stored entries for a given source file sorted by location."""
+        results = self.collection.get(
+            where={"source": source}, include=["documents", "metadatas"]
+        )
+        if not results or not results["metadatas"]:
+            return []
+
+        entries = []
+        for doc, meta in zip(results["documents"], results["metadatas"]):
+            entries.append({"text": doc, "metadata": meta})
+
+        return sorted(
+            entries,
+            key=lambda entry: (
+                entry["metadata"].get("page_number")
+                if entry["metadata"].get("page_number") is not None
+                else entry["metadata"].get("chunk_index", 0),
+                entry["metadata"].get("chunk_index", 0),
+            ),
+        )
 
     def get_indexed_file_hashes(self, directory_path: str = "") -> Dict[str, str]:
         """
@@ -151,3 +190,37 @@ class ChromaStore:
                         file_hashes[source] = meta["file_hash"]
 
         return file_hashes
+
+    @staticmethod
+    def _matches_filters(
+        metadata: Dict[str, Any], filters: Dict[str, Any] | None = None
+    ) -> bool:
+        if not filters:
+            return True
+
+        scope = filters.get("scope")
+        if scope and not metadata.get("source", "").startswith(scope):
+            return False
+
+        path_prefix = filters.get("path_prefix")
+        if path_prefix and not metadata.get("source", "").startswith(path_prefix):
+            return False
+
+        types = filters.get("types")
+        if types and metadata.get("type") not in set(types):
+            return False
+
+        extensions = filters.get("extensions")
+        if extensions:
+            normalized = {
+                extension if extension.startswith(".") else f".{extension}"
+                for extension in extensions
+            }
+            if metadata.get("extension") not in normalized:
+                return False
+
+        modalities = filters.get("modalities")
+        if modalities and metadata.get("modality") not in set(modalities):
+            return False
+
+        return True

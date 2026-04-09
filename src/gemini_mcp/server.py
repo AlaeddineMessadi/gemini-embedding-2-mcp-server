@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 from google.genai import types
 from gemini_mcp.db.store import ChromaStore
 from gemini_mcp.embeddings.gemini import GeminiEmbeddingClient
-from gemini_mcp.parsers.scanner import scan_directory
+from gemini_mcp.parsers.scanner import scan_directory, preview_directory_scan
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,6 +31,38 @@ def get_embedder() -> GeminiEmbeddingClient:
     if _embedding_client is None:
         _embedding_client = GeminiEmbeddingClient()
     return _embedding_client
+
+
+def _format_search_result(match: dict, index: int) -> str:
+    metadata = match["metadata"]
+    source = metadata.get("source", "Unknown file")
+    filename = metadata.get("filename") or os.path.basename(source) or "Unknown file"
+    result_lines = [
+        f"--- Result {index} ---",
+        f"File Name: {filename}",
+        f"File Path: {source}",
+        f"Type: {metadata.get('type', 'unknown')}",
+        f"Modality: {metadata.get('modality', 'unknown')}",
+    ]
+
+    if metadata.get("page_number") is not None:
+        result_lines.append(f"Page: {metadata['page_number']}")
+
+    result_lines.append(f"Relevance Distance: {match.get('distance', 0.0):.3f}")
+    result_lines.append(f"Content:\n{match['text']}")
+    return "\n".join(result_lines)
+
+
+def _parse_locator(locator: str | None) -> tuple[str | None, int | None]:
+    if not locator:
+        return None, None
+
+    kind, separator, raw_value = locator.partition(":")
+    if separator == "" or not raw_value.isdigit():
+        raise ValueError(
+            "Locator must use the format 'chunk:<n>' or 'page:<n>' with a numeric index."
+        )
+    return kind, int(raw_value)
 
 
 @mcp.tool()
@@ -102,7 +134,15 @@ async def index_directory(directory_path: str, ignore: list[str] = None) -> str:
 
 
 @mcp.tool()
-async def search_my_documents(query: str, limit: int = 5) -> str:
+async def search_my_documents(
+    query: str,
+    limit: int = 5,
+    scope: str | None = None,
+    types: list[str] | None = None,
+    path_prefix: str | None = None,
+    extensions: list[str] | None = None,
+    modalities: list[str] | None = None,
+) -> str:
     """
     Performs a semantic search over your previously indexed local documents
     AND images using the Gemini 2 Embedding model.
@@ -115,28 +155,32 @@ async def search_my_documents(query: str, limit: int = 5) -> str:
         if not query_vec:
             return "Failed to generate embedding for query."
 
-        matches = db.query(query_vec, n_results=limit)
+        filters = {
+            "scope": scope,
+            "types": types,
+            "path_prefix": path_prefix,
+            "extensions": extensions,
+            "modalities": modalities,
+        }
+        active_filters = {key: value for key, value in filters.items() if value}
+
+        matches = db.query(query_vec, n_results=limit, filters=active_filters or None)
 
         if not matches:
             return "No relevant documents found. Have you indexed your directories yet?"
 
-        # Format the results cleanly for the LLM
-        formatted = f"Found {len(matches)} relevant excerpts/images:\n\n"
+        result_word = "result" if len(matches) == 1 else "results"
+        sections = [f"Found {len(matches)} relevant {result_word}:\n"]
         for i, match in enumerate(matches, 1):
-            source = match["metadata"].get("source", "Unknown file")
-            filename = (
-                os.path.basename(source) if source != "Unknown file" else "Unknown file"
+            sections.append(_format_search_result(match, i))
+
+        if active_filters:
+            filters_str = ", ".join(
+                f"{key}={value}" for key, value in active_filters.items()
             )
-            score = match.get("distance", 0.0)
-            text = match["text"]
+            sections.insert(0, f"Applied filters: {filters_str}\n")
 
-            formatted += f"--- Result {i} ---\n"
-            formatted += f"File Name: {filename}\n"
-            formatted += f"File Path: {source}\n"
-            formatted += f"Relevance Distance: {score:.3f}\n"
-            formatted += f"Content:\n{text}\n\n"
-
-        return formatted
+        return "\n\n".join(sections)
 
     except Exception as e:
         logger.error(f"Search failed: {e}")
@@ -144,17 +188,49 @@ async def search_my_documents(query: str, limit: int = 5) -> str:
 
 
 @mcp.tool()
+async def preview_directory(
+    directory_path: str, ignore: list[str] | None = None
+) -> str:
+    """
+    Summarizes what would be indexed before the server performs a full scan.
+    """
+    preview = preview_directory_scan(directory_path, ignore=ignore)
+
+    if preview["skip_reasons"].get("missing_directory"):
+        return f"Directory not found: {directory_path}"
+    if preview["skip_reasons"].get("root_blocked"):
+        return f"Refusing to preview root directory: {directory_path}"
+
+    lines = [
+        f"Preview for {preview['directory']}",
+        f"Eligible files: {preview['eligible_files']}",
+    ]
+
+    if preview["modality_counts"]:
+        lines.append("Modalities:")
+        for modality, count in sorted(preview["modality_counts"].items()):
+            lines.append(f"- {modality}: {count}")
+
+    if preview["skip_reasons"]:
+        lines.append("Skipped:")
+        for reason, count in sorted(preview["skip_reasons"].items()):
+            lines.append(f"- {reason}: {count}")
+
+    return "\n".join(lines)
+
+
+@mcp.tool()
 async def list_indexed_directories() -> str:
     """
-    Lists all the file paths that have been indexed in the database.
+    Lists indexed parent directories known to the database.
     """
     try:
         db = get_db()
-        sources = db.list_indexed_sources()
-        if not sources:
+        directories = db.list_indexed_directories()
+        if not directories:
             return "The database is currently empty."
 
-        return "The following files are indexed:\n- " + "\n- ".join(sources)
+        return "The following directories are indexed:\n- " + "\n- ".join(directories)
     except Exception as e:
         return f"Error connecting to database: {str(e)}"
 
@@ -220,6 +296,61 @@ async def sync_indexed_directories() -> str:
         )
     except Exception as e:
         return f"Error during sync: {str(e)}"
+
+
+@mcp.tool()
+async def get_result_context(
+    source: str, locator: str | None = None, window: int = 1
+) -> str:
+    """
+    Returns nearby chunks or pages for a previously indexed result.
+    """
+    try:
+        db = get_db()
+        entries = db.get_source_entries(source)
+        if not entries:
+            return f"No indexed content found for {source}."
+
+        locator_kind, locator_value = _parse_locator(locator)
+
+        target_index = 0
+        if locator_kind is not None:
+            for index, entry in enumerate(entries):
+                metadata = entry["metadata"]
+                if (
+                    locator_kind == "chunk"
+                    and metadata.get("chunk_index") == locator_value
+                ):
+                    target_index = index
+                    break
+                if (
+                    locator_kind == "page"
+                    and metadata.get("page_number") == locator_value
+                ):
+                    target_index = index
+                    break
+            else:
+                return f"Could not find locator {locator} for {source}."
+
+        start = max(0, target_index - window)
+        end = min(len(entries), target_index + window + 1)
+        selected = entries[start:end]
+
+        lines = [f"Context for {source}"]
+        for entry in selected:
+            metadata = entry["metadata"]
+            if metadata.get("page_number") is not None:
+                label = f"Page {metadata['page_number']}"
+            else:
+                label = f"Chunk {metadata.get('chunk_index', 0)}"
+            lines.append(f"--- {label} ---")
+            lines.append(entry["text"])
+
+        return "\n".join(lines)
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Error retrieving context: {str(e)}"
 
 
 @mcp.resource("gemini://database-stats")

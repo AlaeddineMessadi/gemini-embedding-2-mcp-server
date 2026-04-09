@@ -1,25 +1,81 @@
 # Ultimate Multimodality
 
-Unlike previous generation text-only embeddings, the `gemini-embedding-2-preview` model accepts **any type of media** up to 8,192 tokens. This MCP server is uniquely designed to act as an abstraction layer to fully unleash this capability inside your local filesystem.
+Gemini Embedding 2 is valuable because it does not force your knowledge into a text-only pipeline. This server is designed around that property.
 
-## 1. Native Media Embeddings
-When the server scans a directory via `index_directory`, it doesn't just read code or `.txt` files. It natively loads:
+## What "Multimodal" Means Here
+
+The server can currently index:
+
+- **Text**: `.txt`, `.md`, `.csv`, `.docx`
+- **PDFs**: page-by-page visual embeddings with extracted page text
 - **Images**: `.jpg`, `.jpeg`, `.png`, `.webp`
-- **Video**: `.mp4`
 - **Audio**: `.mp3`, `.wav`, `.aiff`, `.aac`
+- **Video**: `.mp4`
 
-Instead of trying to extract text from a video, the server sends the **raw binary file** (`types.Part.from_bytes`) directly to the Gemini Embedding 2 model. Gemini literally "watches" the video or "listens" to the audio clip and generates a semantic float tensor representing its meaning.
+All of these end up in one local semantic memory layer.
 
-When an LLM (Claude) queries your database, it can retrieve the path to that specific `.mp4` based entirely on the visual or auditory concepts contained within it!
+## Native Media Retrieval
 
-## 2. Visual PDF Hybrid RAG
-Perhaps the most groundbreaking feature of this server is how it handles `.pdf` documents.
+For images, audio, and video, the server sends raw bytes to Gemini Embedding 2 through `types.Part.from_bytes(...)`.
 
-Traditionally, RAG architectures use libraries like `PyMuPDF` or `pdf2text` to strip raw text strings out of documents. This destroys formatting, strips out embedded tables, drops charts, and ignores layout.
+That means the system is not limited to OCR, filenames, or transcripts. A query can retrieve a file because of what the media **contains**, not only because of text extracted from it.
 
-### Our Solution
-1. **The Photograph**: The server iterates through every single page of a PDF and renders it as a high-definition `150 DPI` PNG Image.
-2. **The Embedding**: That image is sent to Gemini Embedding 2. Gemini natively "looks" at the page layout, comprehends the charts, reads the formulas, and generates a flawless semantic spatial vector.
-3. **The Hybrid Storage**: In parallel, we *also* extract the raw text, but we only use it as the fallback metadata for ChromaDB!
+This is especially useful when your workspace includes:
+- design screenshots
+- exported charts
+- recordings
+- short clips
+- mixed-format project archives
 
-This means when Claude searches, it mathematically matches the query against the *visually mapped vector*, but is handed the raw text so it can easily read, cite, and quote the PDF!
+## Visual PDF Retrieval
+
+PDFs are handled differently from standard text files.
+
+Instead of flattening the whole document into plain text only, the server:
+
+1. renders each page as an image
+2. embeds that page visually
+3. stores extracted text as the readable result payload
+4. stores the exact `page_number` for context retrieval
+
+This gives you two benefits at once:
+
+- the retrieval quality of a visual page representation
+- the usability of readable page text in the result
+
+## Why Page-Aware Metadata Matters
+
+Multimodal retrieval is only genuinely useful if the result can be traced back to a precise local location.
+
+That is why the server now stores metadata such as:
+- `modality`
+- `type`
+- `page_number`
+- `extension`
+- `directory_root`
+- `filename`
+
+This enables:
+- modality filters
+- page-aware citations
+- scoped search
+- context lookups after retrieval
+
+## Current Strengths
+
+The strongest parts of the multimodal design today are:
+
+- one memory layer across multiple modalities
+- visual PDF page indexing
+- direct media embeddings
+- exact file and page reporting
+
+## Current Limits
+
+The current implementation still indexes audio and video at the file level, not at fine-grained scene or transcript segment level.
+
+That means:
+- you can retrieve the right file semantically
+- but the system may not yet isolate the exact timestamp inside a long recording
+
+This is a good foundation, but segment-level media enrichment is a later upgrade, not a current claim.

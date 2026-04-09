@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-10
+
+### Added
+- **Preview Before Indexing**: Added `preview_directory()` so agents and users can inspect what will be indexed, broken down by modality and skip reason, before spending time or tokens.
+- **Result Context Retrieval**: Added `get_result_context()` to pull exact chunk or page-adjacent context from previously indexed files.
+- **Richer Metadata Model**: Indexed entries now store filename, extension, modality, directory root, page number, file size, and modification time for stronger downstream retrieval and inspection.
+- **Use Case and Result Model Docs**: Added dedicated documentation explaining practical workflows and the server's result metadata.
+
+### Changed
+- **Search Precision**: `search_my_documents()` now supports compact retrieval filters for scope, type, path prefix, extension, and modality.
+- **Directory Listing Semantics**: `list_indexed_directories()` now returns indexed parent directories instead of raw file paths.
+- **Product Positioning**: Reworked the README and technical docs to describe the server as a multimodal local memory engine rather than a generic local RAG utility.
+
 ## [1.1.1] - 2026-04-10
 
 ### Added
