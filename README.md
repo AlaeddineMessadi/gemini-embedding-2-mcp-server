@@ -51,7 +51,9 @@ We support two ways to run this server: **Zero-Install** (Recommended) or **Loca
 Make sure you have `uv` installed on your machine (`pip install uv`).
 
 ### Method 1: Zero-Install (Recommended)
-You can point your AI assistant to run the server directly from GitHub without ever cloning the repository locally. `uvx` acts like `npx` for Python, downloading and caching the server in a secure ephemeral environment automatically!
+You can point your AI assistant to run the server directly from GitHub without ever cloning the repository locally. `uvx` acts like `npx` for Python, downloading and caching the server in a secure ephemeral environment automatically.
+
+PyPI is configured as the long-term stable distribution channel for tagged releases. Until the first PyPI publish completes, use the pinned Git release-tag install below.
 
 For a **stable install**, pin to a release tag:
 
@@ -66,6 +68,12 @@ uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server
 ```
 
 For an **edge install**, omit the tag and track the latest `main` branch state.
+
+Once PyPI publishing is live, the stable install command becomes:
+
+```bash
+uvx gemini-embedding-2-mcp-server
+```
 
 ## 🔑 Getting your Gemini API Key
 To power the embedding model, you need a free API key from Google.
@@ -84,7 +92,7 @@ Run the following command in your terminal:
 ```bash
 claude mcp add gemini-embedding-2-mcp \
   --env GEMINI_API_KEY="your-api-key-here" \
-  -- uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git gemini-embedding-2-mcp
+  -- uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.1 gemini-embedding-2-mcp
 ```
 
 ### 🦋 Claude Desktop
@@ -96,7 +104,7 @@ Open your Claude Desktop config file (usually `~/Library/Application Support/Cla
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git",
+        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.1",
         "gemini-embedding-2-mcp"
       ],
       "env": {
@@ -112,7 +120,7 @@ Open your Claude Desktop config file (usually `~/Library/Application Support/Cla
 2. Click **+ Add new MCP server**
 3. Choose **command** as the type.
 4. Name: `gemini-embedding`
-5. Command: `GEMINI_API_KEY="your-api-key" uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git gemini-embedding-2-mcp`
+5. Command: `GEMINI_API_KEY="your-api-key" uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.1 gemini-embedding-2-mcp`
 
 ### 🏄‍♂️ Windsurf (Cascade)
 Open your `~/.codeium/windsurf/mcp_config.json` file and add:
@@ -123,7 +131,7 @@ Open your `~/.codeium/windsurf/mcp_config.json` file and add:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git",
+        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.1",
         "gemini-embedding-2-mcp"
       ],
       "env": {
@@ -143,7 +151,7 @@ Open your `~/.config/zed/settings.json` and append the MCP server block:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git",
+        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.1",
         "gemini-embedding-2-mcp"
       ],
       "env": {
@@ -163,7 +171,7 @@ Open `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-d
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git",
+        "git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.1",
         "gemini-embedding-2-mcp"
       ],
       "env": {

@@ -9,7 +9,8 @@ This repository is intended to keep `main` in a releasable state.
 - The release workflow:
   - runs tests
   - builds Python distributions
-  - creates or updates the GitHub release
+  - creates the GitHub release and uploads artifacts
+  - publishes the Python package to PyPI via trusted publishing
   - publishes a Docker image to GHCR
 
 ## Standard Release Flow
@@ -26,7 +27,21 @@ git push origin v1.2.0
 4. Let GitHub Actions build:
    - release artifacts in `dist/`
    - release notes
+   - PyPI package publish
    - GHCR Docker image
+
+## Stable Install Channel
+
+- Long term, stable installs should come from PyPI
+- Until the first PyPI publish succeeds, keep user-facing install examples pinned to Git release tags
+- After PyPI is live, switch the default `uvx` examples in the README and client snippets to `uvx gemini-embedding-2-mcp-server`
+
+## One-Time PyPI Setup
+
+1. Create the `gemini-embedding-2-mcp-server` project on PyPI
+2. Configure a trusted publisher for this repository and release workflow
+3. Add the repository variable `ENABLE_PYPI_PUBLISH=true`
+4. Push the next `v*` tag to let GitHub Actions publish automatically
 
 ## Collaboration Notes
 

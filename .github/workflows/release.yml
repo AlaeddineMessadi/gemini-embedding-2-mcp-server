@@ -6,24 +6,29 @@ on:
       - "v*"
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    environment:
+      name: pypi
+      url: https://pypi.org/project/gemini-embedding-2-mcp-server/
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
 
@@ -37,21 +42,37 @@ jobs:
         run: uv build
 
       - name: Create GitHub release and upload artifacts
-        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --verify-tag
+          fi
+
+      - name: Publish distributions to PyPI
+        if: vars.ENABLE_PYPI_PUBLISH == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          files: |
-            dist/*
-          generate_release_notes: true
+          skip-existing: true
+
+      - name: Explain skipped PyPI publish
+        if: vars.ENABLE_PYPI_PUBLISH != 'true'
+        run: echo "PyPI publish skipped. Set ENABLE_PYPI_PUBLISH=true after trusted publisher setup."
 
   docker-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -59,7 +80,7 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -67,7 +88,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true

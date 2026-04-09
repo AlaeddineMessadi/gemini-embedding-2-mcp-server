@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **PyPI Publishing Path**: Added trusted-publishing support to the release workflow so tagged releases can publish to PyPI once repository-side setup is enabled.
+
+### Changed
+- **GitHub Actions Runtime Refresh**: Moved the CI and release workflows to current Node 24-compatible action majors.
+- **Dependabot Noise Reduction**: Grouped GitHub Actions and Python dependency updates so maintenance arrives in fewer, broader PRs.
+- **Release Documentation**: Documented the PyPI enablement flow and clarified that pinned Git release tags remain the stable install path until the first PyPI publish succeeds.
+
 ## [1.2.1] - 2026-04-10
 
 ### Changed
