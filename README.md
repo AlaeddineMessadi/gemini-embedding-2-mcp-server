@@ -164,6 +164,22 @@ claude mcp add gemini-embedding-local --env GEMINI_API_KEY="your-api-key" -- uv 
 
 ---
 
+### Method 3: Docker
+
+If you need a containerized MCP server for registry validation or deployment, build and run the included image:
+
+```bash
+docker build -t gemini-embedding-2-mcp-server .
+docker run --rm -i \
+  -e GEMINI_API_KEY="your-api-key-here" \
+  -v "$HOME/.gemini_mcp_db:/root/.gemini_mcp_db" \
+  gemini-embedding-2-mcp-server
+```
+
+The container communicates over standard I/O like any other local MCP server and persists ChromaDB data in the mounted volume.
+
+---
+
 ## 🛠️ Exposed MCP Capabilities
 
 Once connected, your AI assistant instantly gains the following tools:
