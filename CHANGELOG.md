@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-04-10
+
+### Changed
+- **Python Support Alignment**: Raised the documented and declared Python support floor to `3.11+` to match the current dependency graph.
+- **CI Matrix Fix**: Updated CI to test supported Python versions instead of failing on unsupported `3.10`.
+- **Stable Install Docs**: Reworked README install guidance to use a release-tag placeholder instead of hard-coding a single version in perpetuity.
+
 ## [1.2.0] - 2026-04-10
 
 ### Added

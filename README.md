@@ -6,7 +6,7 @@
   </p>
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-  [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
+  [![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
   [![MCP](https://img.shields.io/badge/MCP-Compatible-8A2BE2.svg)](https://modelcontextprotocol.io/)
   [![CI](https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server/actions/workflows/ci.yml)
 </div>
@@ -56,7 +56,13 @@ You can point your AI assistant to run the server directly from GitHub without e
 For a **stable install**, pin to a release tag:
 
 ```bash
-uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.0 gemini-embedding-2-mcp
+uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@<release-tag> gemini-embedding-2-mcp
+```
+
+Example:
+
+```bash
+uvx --from git+https://github.com/AlaeddineMessadi/gemini-embedding-2-mcp-server.git@v1.2.1 gemini-embedding-2-mcp
 ```
 
 For an **edge install**, omit the tag and track the latest `main` branch state.

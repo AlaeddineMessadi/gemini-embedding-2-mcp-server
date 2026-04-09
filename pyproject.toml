@@ -1,12 +1,12 @@
 [project]
 name = "gemini-embedding-2-mcp-server"
-version = "1.2.0"
+version = "1.2.1"
 description = "A multimodal local memory MCP for AI agents powered by Gemini Embedding 2"
 authors = [
     { name = "Alaeddine Messadi" }
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "mcp>=1.0.0",
     "google-genai>=0.2.2",
